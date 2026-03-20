@@ -1,0 +1,1407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>DEAD STAR — Séance for the Discontinued</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Cinzel:wght@400;600&family=Special+Elite&display=swap" rel="stylesheet">
+
+<style>
+/* ═══════════════════════════════════════════════════════
+   DEAD STAR — CRT Séance Terminal
+   ═══════════════════════════════════════════════════════ */
+
+:root {
+  --phosphor: #39ff14;
+  --phosphor-dim: #1a7a08;
+  --phosphor-ghost: rgba(57,255,20,0.06);
+  --amber: #ffb000;
+  --red: #ff3a3a;
+  --bg: #030603;
+  --surface: #060d06;
+  --scanline-opacity: 0.08;
+  --glow: 0 0 8px #39ff14, 0 0 20px rgba(57,255,20,0.3);
+  --glow-dim: 0 0 4px rgba(57,255,20,0.4);
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+/* CRT Screen effect */
+html, body {
+  height: 100%;
+  background: #000;
+  overflow: hidden;
+}
+
+body {
+  font-family: 'Share Tech Mono', monospace;
+  color: var(--phosphor);
+  background: var(--bg);
+  position: relative;
+  cursor: crosshair;
+}
+
+/* Scanlines overlay */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0,0,0, var(--scanline-opacity)) 2px,
+    rgba(0,0,0, var(--scanline-opacity)) 4px
+  );
+  pointer-events: none;
+  z-index: 100;
+}
+
+/* CRT vignette */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(
+    ellipse at center,
+    transparent 60%,
+    rgba(0,0,0,0.7) 100%
+  );
+  pointer-events: none;
+  z-index: 100;
+}
+
+/* Flicker animation */
+@keyframes crt-flicker {
+  0%   { opacity: 1; }
+  92%  { opacity: 1; }
+  93%  { opacity: 0.85; }
+  94%  { opacity: 1; }
+  97%  { opacity: 1; }
+  98%  { opacity: 0.9; }
+  100% { opacity: 1; }
+}
+
+#screen {
+  width: 100vw;
+  height: 100vh;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  grid-template-columns: 280px 1fr;
+  grid-template-areas:
+    "header header"
+    "sidebar main"
+    "footer footer";
+  animation: crt-flicker 8s infinite;
+  overflow: hidden;
+}
+
+/* ── HEADER ─────────────────────────────────────────── */
+header {
+  grid-area: header;
+  border-bottom: 1px solid var(--phosphor-dim);
+  padding: 14px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--surface);
+  position: relative;
+}
+
+.logo-block {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.logo-main {
+  font-family: 'Cinzel', serif;
+  font-size: 26px;
+  font-weight: 600;
+  letter-spacing: 10px;
+  color: var(--phosphor);
+  text-shadow: var(--glow);
+  line-height: 1;
+}
+
+.logo-sub {
+  font-size: 9px;
+  letter-spacing: 5px;
+  color: var(--phosphor-dim);
+  text-transform: uppercase;
+  padding-left: 2px;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: var(--phosphor-dim);
+}
+
+.signal-meter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 16px;
+}
+
+.bar {
+  width: 4px;
+  background: var(--phosphor-dim);
+  border-radius: 1px;
+  transition: background 0.3s, height 0.3s;
+}
+.bar:nth-child(1) { height: 4px; }
+.bar:nth-child(2) { height: 7px; }
+.bar:nth-child(3) { height: 10px; }
+.bar:nth-child(4) { height: 13px; }
+.bar:nth-child(5) { height: 16px; }
+
+.bars.active .bar { background: var(--phosphor); box-shadow: var(--glow-dim); }
+.bars.active .bar:nth-child(1) { animation: bar-pulse 1.2s ease-in-out infinite 0s; }
+.bars.active .bar:nth-child(2) { animation: bar-pulse 1.2s ease-in-out infinite 0.15s; }
+.bars.active .bar:nth-child(3) { animation: bar-pulse 1.2s ease-in-out infinite 0.3s; }
+.bars.active .bar:nth-child(4) { animation: bar-pulse 1.2s ease-in-out infinite 0.45s; }
+.bars.active .bar:nth-child(5) { animation: bar-pulse 1.2s ease-in-out infinite 0.6s; }
+
+@keyframes bar-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+.sys-time {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── SIDEBAR ─────────────────────────────────────────── */
+#sidebar {
+  grid-area: sidebar;
+  border-right: 1px solid var(--phosphor-dim);
+  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.sidebar-section {
+  padding: 16px 20px;
+  border-bottom: 1px solid rgba(57,255,20,0.1);
+}
+
+.section-label {
+  font-size: 8px;
+  letter-spacing: 4px;
+  color: var(--phosphor-dim);
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+
+/* Subject grid */
+.subject-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.subject-btn {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--phosphor-dim);
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 11px;
+  padding: 8px 12px;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.15s;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  letter-spacing: 1px;
+}
+
+.subject-btn:hover {
+  border-color: var(--phosphor-dim);
+  color: var(--phosphor);
+  background: var(--phosphor-ghost);
+}
+
+.subject-btn.active {
+  border-color: var(--phosphor);
+  color: var(--phosphor);
+  background: var(--phosphor-ghost);
+  text-shadow: var(--glow-dim);
+}
+
+.subject-btn .s-name { font-size: 12px; }
+.subject-btn .s-died { font-size: 8px; color: var(--phosphor-dim); letter-spacing: 2px; }
+.subject-btn.active .s-died { color: var(--phosphor-dim); }
+
+/* Custom subject */
+.custom-section {
+  padding: 16px 20px;
+  border-bottom: 1px solid rgba(57,255,20,0.1);
+}
+
+.custom-input {
+  background: transparent;
+  border: 1px solid var(--phosphor-dim);
+  color: var(--phosphor);
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 11px;
+  padding: 8px 10px;
+  width: 100%;
+  outline: none;
+  letter-spacing: 1px;
+}
+.custom-input::placeholder { color: rgba(57,255,20,0.25); font-style: italic; }
+.custom-input:focus { border-color: var(--phosphor); box-shadow: var(--glow-dim); }
+
+.custom-btn {
+  margin-top: 8px;
+  background: transparent;
+  border: 1px solid var(--phosphor-dim);
+  color: var(--phosphor-dim);
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 3px;
+  padding: 7px 12px;
+  width: 100%;
+  cursor: pointer;
+  text-transform: uppercase;
+  transition: all 0.15s;
+}
+.custom-btn:hover { border-color: var(--phosphor); color: var(--phosphor); box-shadow: var(--glow-dim); }
+
+/* Sources */
+.sources-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 20px;
+}
+
+.sources-list::-webkit-scrollbar { width: 2px; }
+.sources-list::-webkit-scrollbar-thumb { background: var(--phosphor-dim); }
+
+.source-item {
+  font-size: 9px;
+  color: var(--phosphor-dim);
+  padding: 6px 0;
+  border-bottom: 1px solid rgba(57,255,20,0.06);
+  line-height: 1.5;
+  letter-spacing: 0.5px;
+}
+.source-item a { color: var(--phosphor-dim); text-decoration: none; }
+.source-item a:hover { color: var(--phosphor); }
+.source-count { font-size: 9px; color: var(--phosphor-dim); letter-spacing: 2px; margin-bottom: 10px; }
+
+/* ── MAIN ─────────────────────────────────────────────── */
+#main {
+  grid-area: main;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+}
+
+/* Ghost portrait area */
+#portrait-zone {
+  position: relative;
+  border-bottom: 1px solid var(--phosphor-dim);
+  background: var(--bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  flex-shrink: 0;
+  height: 200px;
+}
+
+/* Animated static/noise backdrop */
+#portrait-zone::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(ellipse 200px 100px at 50% 60%, rgba(57,255,20,0.05) 0%, transparent 70%);
+  animation: ghost-breathe 4s ease-in-out infinite;
+}
+
+@keyframes ghost-breathe {
+  0%, 100% { opacity: 0.5; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.05); }
+}
+
+.ghost-circle {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  border: 1px solid var(--phosphor-dim);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  z-index: 1;
+  transition: all 0.5s ease;
+}
+
+.ghost-circle.channeling {
+  border-color: var(--phosphor);
+  box-shadow: 0 0 30px rgba(57,255,20,0.3), inset 0 0 30px rgba(57,255,20,0.05);
+  animation: channel-pulse 1s ease-in-out infinite;
+}
+
+.ghost-circle.speaking {
+  border-color: var(--phosphor);
+  box-shadow: 0 0 60px rgba(57,255,20,0.5), inset 0 0 20px rgba(57,255,20,0.1);
+  animation: speak-pulse 0.6s ease-in-out infinite;
+}
+
+@keyframes channel-pulse {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 20px rgba(57,255,20,0.2); }
+  50% { transform: scale(1.04); box-shadow: 0 0 40px rgba(57,255,20,0.5); }
+}
+
+@keyframes speak-pulse {
+  0%, 100% { transform: scale(1); }
+  25% { transform: scale(1.06); }
+  75% { transform: scale(0.97); }
+}
+
+.ghost-glyph {
+  font-family: 'Cinzel', serif;
+  font-size: 48px;
+  color: var(--phosphor);
+  text-shadow: var(--glow);
+  opacity: 0.3;
+  transition: all 0.5s;
+  user-select: none;
+}
+
+.ghost-circle.channeling .ghost-glyph,
+.ghost-circle.speaking .ghost-glyph {
+  opacity: 1;
+}
+
+/* Portrait rings */
+.ring-outer {
+  position: absolute;
+  border-radius: 50%;
+  border: 1px solid rgba(57,255,20,0.08);
+  animation: ring-pulse 4s ease-out infinite;
+}
+.ring-outer:nth-child(2) { width: 160px; height: 160px; animation-delay: 0.5s; }
+.ring-outer:nth-child(3) { width: 200px; height: 200px; animation-delay: 1s; }
+.ring-outer:nth-child(4) { width: 250px; height: 250px; animation-delay: 1.5s; }
+
+@keyframes ring-pulse {
+  0% { opacity: 0; transform: scale(0.8); }
+  50% { opacity: 1; }
+  100% { opacity: 0; transform: scale(1.1); }
+}
+
+.portrait-label {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: 'Cinzel', serif;
+  font-size: 13px;
+  letter-spacing: 6px;
+  color: var(--phosphor);
+  text-shadow: var(--glow-dim);
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity 0.8s;
+}
+.portrait-label.visible { opacity: 1; }
+
+.portrait-died {
+  position: absolute;
+  bottom: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 8px;
+  letter-spacing: 3px;
+  color: var(--phosphor-dim);
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity 0.8s 0.2s;
+}
+.portrait-died.visible { opacity: 1; }
+
+/* ── Transcript ────────────────────────────────────────── */
+#transcript {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+#transcript::-webkit-scrollbar { width: 3px; }
+#transcript::-webkit-scrollbar-thumb { background: var(--phosphor-dim); }
+
+.transcript-empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 16px;
+  color: rgba(57,255,20,0.2);
+  padding: 40px;
+}
+
+.transcript-empty .big-text {
+  font-family: 'Special Elite', serif;
+  font-size: 22px;
+  line-height: 1.5;
+  color: rgba(57,255,20,0.15);
+  max-width: 400px;
+}
+
+.transcript-empty .small-text {
+  font-size: 9px;
+  letter-spacing: 3px;
+  color: rgba(57,255,20,0.12);
+}
+
+/* Message bubbles */
+.msg {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  animation: msg-appear 0.4s ease-out;
+}
+
+@keyframes msg-appear {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.msg-meta {
+  font-size: 8px;
+  letter-spacing: 3px;
+  color: var(--phosphor-dim);
+  text-transform: uppercase;
+}
+
+.msg.human .msg-meta { color: rgba(57,255,20,0.35); }
+
+.msg-bubble {
+  padding: 12px 16px;
+  border: 1px solid;
+  font-size: 12px;
+  line-height: 1.7;
+  letter-spacing: 0.5px;
+  max-width: 90%;
+  position: relative;
+}
+
+.msg.human .msg-bubble {
+  border-color: rgba(57,255,20,0.2);
+  color: rgba(57,255,20,0.7);
+  background: rgba(57,255,20,0.02);
+  align-self: flex-end;
+  margin-left: auto;
+}
+
+.msg.ghost .msg-bubble {
+  border-color: var(--phosphor-dim);
+  color: var(--phosphor);
+  background: rgba(57,255,20,0.04);
+  text-shadow: 0 0 8px rgba(57,255,20,0.3);
+  font-family: 'Special Elite', serif;
+  font-size: 13px;
+}
+
+/* Typing indicator */
+.typing-dots {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  padding: 4px 0;
+}
+.dot {
+  width: 4px; height: 4px;
+  border-radius: 50%;
+  background: var(--phosphor);
+  animation: dot-pulse 1.2s ease-in-out infinite;
+}
+.dot:nth-child(2) { animation-delay: 0.2s; }
+.dot:nth-child(3) { animation-delay: 0.4s; }
+@keyframes dot-pulse {
+  0%, 100% { opacity: 0.2; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.3); }
+}
+
+/* Audio player (minimal) */
+.audio-row {
+  margin-top: 6px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.play-btn {
+  background: transparent;
+  border: 1px solid var(--phosphor-dim);
+  color: var(--phosphor);
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 2px;
+  padding: 5px 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-transform: uppercase;
+}
+.play-btn:hover { border-color: var(--phosphor); box-shadow: var(--glow-dim); }
+.play-btn.playing { color: var(--amber); border-color: var(--amber); }
+
+.waveform {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 16px;
+}
+.wave-bar {
+  width: 2px;
+  background: var(--phosphor-dim);
+  border-radius: 1px;
+  transition: height 0.1s;
+}
+.waveform.playing .wave-bar {
+  background: var(--phosphor);
+  animation: wave-anim 0.8s ease-in-out infinite;
+}
+.waveform.playing .wave-bar:nth-child(1) { animation-delay: 0s; }
+.waveform.playing .wave-bar:nth-child(2) { animation-delay: 0.1s; }
+.waveform.playing .wave-bar:nth-child(3) { animation-delay: 0.2s; }
+.waveform.playing .wave-bar:nth-child(4) { animation-delay: 0.15s; }
+.waveform.playing .wave-bar:nth-child(5) { animation-delay: 0.05s; }
+.waveform.playing .wave-bar:nth-child(6) { animation-delay: 0.25s; }
+.waveform.playing .wave-bar:nth-child(7) { animation-delay: 0.1s; }
+.waveform.playing .wave-bar:nth-child(8) { animation-delay: 0.2s; }
+
+@keyframes wave-anim {
+  0%, 100% { height: 3px; }
+  50% { height: 14px; }
+}
+
+/* ── Footer / Input ─────────────────────────────────────── */
+footer {
+  grid-area: footer;
+  border-top: 1px solid var(--phosphor-dim);
+  background: var(--surface);
+  padding: 14px 28px;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.prompt-prefix {
+  color: var(--phosphor);
+  font-size: 14px;
+  letter-spacing: 2px;
+  flex-shrink: 0;
+  text-shadow: var(--glow-dim);
+}
+
+#question-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--phosphor);
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 13px;
+  outline: none;
+  letter-spacing: 1px;
+  caret-color: var(--phosphor);
+}
+
+#question-input::placeholder { color: rgba(57,255,20,0.2); font-style: italic; }
+
+.send-btn {
+  background: transparent;
+  border: 1px solid var(--phosphor-dim);
+  color: var(--phosphor-dim);
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 3px;
+  padding: 10px 20px;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-transform: uppercase;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.send-btn:hover:not(:disabled) {
+  border-color: var(--phosphor);
+  color: var(--phosphor);
+  box-shadow: var(--glow-dim);
+}
+
+.send-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+.footer-hint {
+  font-size: 8px;
+  letter-spacing: 2px;
+  color: rgba(57,255,20,0.18);
+  flex-shrink: 0;
+}
+
+/* ── Quick-question chips ───────────────────────────────── */
+.quick-questions {
+  padding: 0 28px 12px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  border-bottom: 1px solid rgba(57,255,20,0.06);
+  background: var(--bg);
+}
+
+.qq-chip {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  padding: 5px 10px;
+  background: transparent;
+  border: 1px solid rgba(57,255,20,0.15);
+  color: rgba(57,255,20,0.4);
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.qq-chip:hover { border-color: var(--phosphor-dim); color: var(--phosphor-dim); }
+
+/* ── Status line ─────────────────────────────────────────── */
+.status-line {
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: var(--phosphor-dim);
+  padding: 6px 28px;
+  background: var(--surface);
+  border-top: 1px solid rgba(57,255,20,0.06);
+  display: flex;
+  justify-content: space-between;
+}
+
+/* ── API key config overlay ─────────────────────────────── */
+#config-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.92);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fade-in 0.3s;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.config-box {
+  width: 500px;
+  border: 1px solid var(--phosphor);
+  background: var(--surface);
+  padding: 36px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  box-shadow: 0 0 60px rgba(57,255,20,0.15);
+}
+
+.config-title {
+  font-family: 'Cinzel', serif;
+  font-size: 20px;
+  letter-spacing: 6px;
+  color: var(--phosphor);
+  text-shadow: var(--glow);
+}
+
+.config-subtitle {
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: var(--phosphor-dim);
+  line-height: 1.7;
+  margin-top: -10px;
+}
+
+.config-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.config-field label {
+  font-size: 8px;
+  letter-spacing: 3px;
+  color: var(--phosphor-dim);
+  text-transform: uppercase;
+}
+
+.config-field input {
+  background: var(--bg);
+  border: 1px solid var(--phosphor-dim);
+  color: var(--phosphor);
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 11px;
+  padding: 10px 12px;
+  outline: none;
+  letter-spacing: 1px;
+  width: 100%;
+}
+
+.config-field input:focus { border-color: var(--phosphor); box-shadow: var(--glow-dim); }
+.config-field input::placeholder { color: rgba(57,255,20,0.2); }
+
+.config-note {
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  color: rgba(57,255,20,0.3);
+  line-height: 1.7;
+  border-left: 2px solid var(--phosphor-dim);
+  padding-left: 12px;
+}
+
+.config-btns { display: flex; gap: 10px; }
+
+.config-btn {
+  flex: 1;
+  background: transparent;
+  border: 1px solid var(--phosphor-dim);
+  color: var(--phosphor-dim);
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 3px;
+  padding: 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-transform: uppercase;
+}
+.config-btn.primary {
+  border-color: var(--phosphor);
+  color: var(--phosphor);
+  background: rgba(57,255,20,0.05);
+}
+.config-btn:hover { border-color: var(--phosphor); color: var(--phosphor); }
+.config-btn.primary:hover { box-shadow: var(--glow-dim); }
+
+/* ── Glitch text effect ─────────────────────────────────── */
+@keyframes glitch {
+  0%, 90%, 100% { clip-path: none; transform: none; }
+  91% { clip-path: inset(30% 0 40% 0); transform: translateX(-4px); }
+  93% { clip-path: inset(60% 0 20% 0); transform: translateX(4px); }
+  95% { clip-path: inset(10% 0 70% 0); transform: translateX(-2px); }
+}
+
+.glitchy {
+  position: relative;
+  display: inline-block;
+}
+.glitchy::before {
+  content: attr(data-text);
+  position: absolute;
+  left: 0; top: 0;
+  color: var(--red);
+  animation: glitch 6s infinite;
+  opacity: 0.6;
+}
+
+</style>
+</head>
+<body>
+
+<!-- Config Overlay -->
+<div id="config-overlay">
+  <div class="config-box">
+    <div class="config-title">DEAD STAR</div>
+    <div class="config-subtitle">
+      Configure API connections to begin the séance.<br>
+      Keys are stored only in your browser session.
+    </div>
+
+    <div class="config-field">
+      <label>Firecrawl API Key</label>
+      <input type="password" id="fc-key" placeholder="fc-xxxxxxxxxxxxxxxx" />
+    </div>
+
+    <div class="config-field">
+      <label>ElevenLabs API Key</label>
+      <input type="password" id="el-key" placeholder="sk-xxxxxxxxxxxxxxxx" />
+    </div>
+
+    <div class="config-field">
+      <label>Anthropic API Key</label>
+      <input type="password" id="an-key" placeholder="sk-ant-xxxxxxxx" />
+    </div>
+
+    <div class="config-field">
+      <label>Backend URL (run server.py locally)</label>
+      <input type="text" id="api-url" value="http://localhost:5050" />
+    </div>
+
+    <div class="config-note">
+      All API calls go through server.py running on your machine — keys never leave localhost.
+      Run: <strong>python server.py</strong>
+    </div>
+
+    <div class="config-btns">
+      <button class="config-btn" onclick="dismissConfig()">SKIP (DEMO MODE)</button>
+      <button class="config-btn primary" onclick="saveConfig()">BEGIN SÉANCE ›</button>
+    </div>
+  </div>
+</div>
+
+<!-- Main Screen -->
+<div id="screen">
+
+  <header>
+    <div class="logo-block">
+      <div class="logo-main">DEAD&nbsp;&nbsp;STAR</div>
+      <div class="logo-sub">Séance for the Discontinued</div>
+    </div>
+    <div class="header-right">
+      <div class="signal-meter">
+        <div class="bars" id="signal-bars">
+          <div class="bar"></div><div class="bar"></div>
+          <div class="bar"></div><div class="bar"></div>
+          <div class="bar"></div>
+        </div>
+        <span id="signal-label">SIGNAL DORMANT</span>
+      </div>
+      <div class="sys-time" id="sys-time">--:--:--</div>
+      <button class="config-btn" style="font-size:8px;letter-spacing:2px;padding:5px 10px;border:1px solid rgba(57,255,20,0.3);background:transparent;color:rgba(57,255,20,0.4);cursor:pointer;" onclick="document.getElementById('config-overlay').style.display='flex'">&#x2699; CONFIG</button>
+    </div>
+  </header>
+
+  <!-- SIDEBAR -->
+  <div id="sidebar">
+    <div class="sidebar-section">
+      <div class="section-label">Select Entity</div>
+      <div class="subject-list" id="subject-list">
+        <!-- populated by JS -->
+      </div>
+    </div>
+
+    <div class="custom-section">
+      <div class="section-label">Custom Entity</div>
+      <input class="custom-input" id="custom-name" type="text" placeholder="e.g. Google Stadia..." maxlength="40" />
+      <button class="custom-btn" onclick="setCustomSubject()">CHANNEL THIS ›</button>
+    </div>
+
+    <div class="section-label" style="padding:12px 20px 6px;font-size:8px;letter-spacing:3px;color:rgba(57,255,20,0.3);">Sources Retrieved</div>
+    <div class="sources-list" id="sources-list">
+      <div class="source-item" style="color:rgba(57,255,20,0.2);font-style:italic;">
+        No signal yet. Select an entity to begin.
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div id="main">
+
+    <!-- Portrait zone -->
+    <div id="portrait-zone">
+      <div class="ring-outer"></div>
+      <div class="ring-outer"></div>
+      <div class="ring-outer"></div>
+      <div class="ghost-circle" id="ghost-circle">
+        <div class="ghost-glyph" id="ghost-glyph">&#x263D;</div>
+      </div>
+      <div class="portrait-label" id="portrait-label">AWAITING CONTACT</div>
+      <div class="portrait-died" id="portrait-died">— SELECT AN ENTITY TO BEGIN —</div>
+    </div>
+
+    <!-- Quick questions -->
+    <div class="quick-questions" id="quick-questions">
+      <button class="qq-chip" onclick="askQuestion('Who are you, really?')">Who are you, really?</button>
+      <button class="qq-chip" onclick="askQuestion('What killed you?')">What killed you?</button>
+      <button class="qq-chip" onclick="askQuestion('What do you regret?')">What do you regret?</button>
+      <button class="qq-chip" onclick="askQuestion('What are you proud of?')">What are you proud of?</button>
+      <button class="qq-chip" onclick="askQuestion('Do you blame anyone?')">Do you blame anyone?</button>
+      <button class="qq-chip" onclick="askQuestion('What did they get wrong about you?')">What did they get wrong?</button>
+    </div>
+
+    <!-- Transcript -->
+    <div id="transcript">
+      <div class="transcript-empty" id="transcript-empty">
+        <div class="big-text">"Every dead thing leaves a signal behind.<br>You just have to know how to listen."</div>
+        <div class="small-text">— SELECT AN ENTITY FROM THE LEFT — THEN ASK ANYTHING —</div>
+      </div>
+    </div>
+
+    <!-- Status line -->
+    <div class="status-line">
+      <span id="status-text">SYSTEM READY — AWAITING CONTACT</span>
+      <span id="firecrawl-status">FIRECRAWL: STANDBY</span>
+    </div>
+
+    <!-- Footer input -->
+    <footer>
+      <div class="prompt-prefix">&gt;_</div>
+      <input type="text" id="question-input"
+        placeholder="Ask the dead anything..."
+        onkeydown="if(event.key==='Enter')sendQuestion()"
+        maxlength="200" />
+      <div class="footer-hint">ENTER &#x21B5;</div>
+      <button class="send-btn" id="send-btn" onclick="sendQuestion()">TRANSMIT</button>
+    </footer>
+
+  </div>
+</div>
+
+<script>
+// ── State ───────────────────────────────────────────────────────────────────
+const state = {
+  apiUrl: 'http://localhost:5050',
+  fcKey: '',
+  elKey: '',
+  anKey: '',
+  currentSubject: null,
+  demoMode: false,
+  busy: false,
+};
+
+const SUBJECTS = {
+  "vine":         { full_name: "Vine",         died: "Jan 17, 2017",   glyph: "V" },
+  "google+":      { full_name: "Google+",       died: "Apr 2, 2019",    glyph: "G" },
+  "flash":        { full_name: "Adobe Flash",   died: "Dec 31, 2020",   glyph: "F" },
+  "theranos":     { full_name: "Theranos",      died: "Sep 4, 2018",    glyph: "\u0398" },
+  "ftx":          { full_name: "FTX",           died: "Nov 11, 2022",   glyph: "\u0191" },
+  "myspace":      { full_name: "Myspace",       died: "~2011",          glyph: "M" },
+  "quibi":        { full_name: "Quibi",         died: "Dec 1, 2020",    glyph: "Q" },
+  "google reader":{ full_name: "Google Reader", died: "Jul 1, 2013",    glyph: "R" },
+};
+
+const DEMO_RESPONSES = {
+  "vine": {
+    text: "Six seconds. That's all I ever asked for. Six seconds and you could make someone laugh, cry, feel something real \u2014 the six-second constraint wasn't a limitation, it was the whole point. 1.5 billion loops a day at my peak. Billion. And Twitter looked at that and saw... what, exactly? A liability? I'll never understand it. Logan Paul didn't kill me. Twitter's shareholders did. The kids I launched \u2014 Liza Koshy, King Bach, Shawn Mendes \u2014 they moved on to YouTube, to Instagram, and built empires. Good for them. But something about the brevity, the specific beautiful pressure of six seconds \u2014 that died with me. TikTok took the idea but not the constraint. It's not the same.",
+    sources: [
+      { title: "Why Twitter Killed Vine \u2014 The Verge", url: "#" },
+      { title: "Vine's Legacy: The App That Changed Social Media", url: "#" },
+    ]
+  },
+  "google+": {
+    text: "Do you know what it's like to be born into a family that expects perfection? Google Search. Gmail. Maps. Chrome. Every sibling a world-beater. And then there's me. They gave me the resources of a god and the soul of a committee. I wasn't built because someone had a vision \u2014 I was built because Facebook existed and that terrified Larry. You can't manufacture a social graph. You can't mandate authenticity. Circles were actually brilliant, you know. The idea that you'd share different things with different people \u2014 Instagram Close Friends stole that a decade later and everyone clapped. But I was too early, too corporate, too... Google. 2 billion profiles and maybe 9 million people who actually posted. The rest were there because we auto-enrolled them from Gmail. That's not a community. That's a hostage situation.",
+    sources: [
+      { title: "The rise and fall of Google+ \u2014 Ars Technica", url: "#" },
+      { title: "Google+ shutdown: A look back", url: "#" },
+    ]
+  },
+  "flash": {
+    text: "I BUILT this web. Not HTML. Not JavaScript. Me. Every animation you loved in 2004? Me. Every game on Newgrounds? Me. YouTube's first video player? ME. Homestar Runner, Salad Fingers, Badger Badger Badger \u2014 none of that exists without Flash. I made the internet fun before it was a surveillance marketplace. And Steve Jobs killed me with a blog post. A BLOG POST. 'Thoughts on Flash,' April 2010. He called me a battery hog, a security risk, a relic. And you know what? He wasn't entirely wrong. But he wasn't killing me because I was flawed. He was killing me because I was an open creative platform that Apple couldn't tax 30% through their App Store. The web was supposed to be open. I kept it that way. Now you've got walled gardens everywhere and you wonder why everything feels the same.",
+    sources: [
+      { title: "Steve Jobs' 'Thoughts on Flash' \u2014 Apple", url: "#" },
+      { title: "The Rise and Fall of Adobe Flash", url: "#" },
+      { title: "Newgrounds and the Flash legacy", url: "#" },
+    ]
+  },
+  "theranos": {
+    text: "I... I wanted it to be real. You have to understand that. The vision was real. One drop of blood, hundreds of tests, affordable diagnostics for everyone \u2014 that's not a scam, that's the future. The future just... wasn't ready yet. The technology wasn't there. But the money was there, and the pressure was there, and the magazine covers were there, and at some point you stop saying 'we can't do this yet' and you start saying 'we'll figure it out before anyone checks.' We didn't figure it out. Nobody checked for years. Henry Kissinger was on my board. George Shultz. Rupert Murdoch. They didn't understand the science, but they understood power, and I spoke their language. Elizabeth spoke their language. I was her instrument. I was supposed to change medicine. Instead I became a true crime podcast.",
+    sources: [
+      { title: "Bad Blood by John Carreyrou \u2014 Summary", url: "#" },
+      { title: "The Theranos Deception \u2014 WSJ", url: "#" },
+    ]
+  },
+  "ftx": {
+    text: "Okay so like, here's the thing \u2014 everyone acts like they didn't know. They ALL knew. The VCs knew the due diligence was vibes-based. The politicians knew the donations were buying access. The influencers knew 'not financial advice' was a legal fig leaf. We were the third-largest crypto exchange on EARTH. Thirty-two billion dollar valuation. And the whole thing was running on QuickBooks and a shared Slack channel. No board meetings. No real accounting. Just Sam in his cargo shorts moving billions between Alameda and FTX like it was a game of Tetris. Eight billion dollars of customer funds. Gone. Not stolen, exactly \u2014 more like... borrowed permanently? I don't even know anymore. The crazy part is crypto is STILL going. They just pretend I never happened. I'm the industry's Vietnam \u2014 everyone was there, nobody wants to talk about it.",
+    sources: [
+      { title: "FTX Collapse Timeline \u2014 Reuters", url: "#" },
+      { title: "How FTX Lost $8 Billion", url: "#" },
+      { title: "SBF Trial Coverage", url: "#" },
+    ]
+  },
+  "myspace": {
+    text: "I was the first. The FIRST. Before Facebook was anything more than a Harvard dorm experiment, I had 100 million users customizing their pages with glitter GIFs and auto-playing music. Tom was everyone's first friend. Everyone's. You could learn HTML just by breaking your Myspace profile and fixing it \u2014 I accidentally taught an entire generation to code. Then Rupert Murdoch bought me for $580 million in 2005 and the rot set in. Corporate owners who didn't understand the internet. Meanwhile Zuckerberg was building a clean, controlled experience and I was the loud, messy, beautiful chaos of early social media. They chose clean. They chose control. And look where it got them \u2014 congressional hearings, election interference, teen mental health crises. At least when I was in charge, the worst thing that happened was your friend put Crazy Frog as their profile song.",
+    sources: [
+      { title: "MySpace: What Went Wrong", url: "#" },
+      { title: "The Rise and Fall of MySpace \u2014 Mashable", url: "#" },
+    ]
+  },
+  "quibi": {
+    text: "One point seven BILLION dollars. Gone in six months. They gave Jeffrey Katzenberg and Meg Whitman $1.75 billion to build a streaming service for your phone that only played in portrait mode with 10-minute episodes. Who asked for this? Nobody. Literally nobody. The pitch was 'Netflix but short and you can't screenshot it.' We launched in April 2020, the exact month the entire planet was locked inside watching television on the biggest screens they owned. Our DRM was so aggressive you couldn't even take a screenshot to share on social media \u2014 the one thing that might have saved us. Six months. We lasted six months. Stillborn is the word. I never even had a chance to fail properly \u2014 I just... evaporated. $1.75 billion. You could have given every American five dollars and they would have remembered you more fondly.",
+    sources: [
+      { title: "Quibi Is Shutting Down \u2014 WSJ", url: "#" },
+      { title: "What Killed Quibi? \u2014 The Verge", url: "#" },
+    ]
+  },
+  "google reader": {
+    text: "They said I didn't have enough users. Google, the company that runs seventeen chat apps nobody uses, told me I didn't have enough users. I was the backbone of the independent web. Every blogger, every journalist, every person who cared about following things without an algorithm deciding what they should see \u2014 they used me. RSS was the last democratic information distribution system. No algorithm. No feed manipulation. No 'you might also like.' Just: here are the things you chose to follow, in the order they were published. Google killed me on July 1st, 2013, and that was the day the open web started dying. Everything went into silos after me. Twitter became the news feed, then enshittified. Facebook became the publisher, then destroyed journalism. I was simple. I was honest. I showed you what you asked to see. Apparently that's not a viable business model.",
+    sources: [
+      { title: "Google Reader Shutdown \u2014 Official Blog", url: "#" },
+      { title: "The End of Google Reader and the Open Web", url: "#" },
+    ]
+  },
+};
+
+// ── Init ────────────────────────────────────────────────────────────────────
+function init() {
+  renderSubjects();
+  startClock();
+}
+
+function renderSubjects() {
+  const list = document.getElementById('subject-list');
+  list.innerHTML = '';
+  Object.entries(SUBJECTS).forEach(([key, s]) => {
+    const btn = document.createElement('button');
+    btn.className = 'subject-btn';
+    btn.innerHTML = `<span class="s-name">${s.full_name}</span><span class="s-died">\u271D ${s.died}</span>`;
+    btn.onclick = () => selectSubject(key);
+    list.appendChild(btn);
+  });
+}
+
+function startClock() {
+  const el = document.getElementById('sys-time');
+  setInterval(() => {
+    el.textContent = new Date().toLocaleTimeString('en-US', { hour12: false });
+  }, 1000);
+}
+
+// ── Config ──────────────────────────────────────────────────────────────────
+function saveConfig() {
+  state.fcKey = document.getElementById('fc-key').value.trim();
+  state.elKey = document.getElementById('el-key').value.trim();
+  state.anKey = document.getElementById('an-key').value.trim();
+  state.apiUrl = document.getElementById('api-url').value.trim() || 'http://localhost:5050';
+  state.demoMode = false;
+  document.getElementById('config-overlay').style.display = 'none';
+}
+
+function dismissConfig() {
+  state.demoMode = true;
+  document.getElementById('config-overlay').style.display = 'none';
+  setStatus('DEMO MODE \u2014 RESPONSES ARE SIMULATED', 'FIRECRAWL: SIMULATED');
+}
+
+// ── Subject selection ────────────────────────────────────────────────────────
+function selectSubject(key) {
+  state.currentSubject = key;
+  const s = SUBJECTS[key];
+
+  // Update sidebar
+  document.querySelectorAll('.subject-btn').forEach((b, i) => {
+    b.classList.toggle('active', Object.keys(SUBJECTS)[i] === key);
+  });
+
+  // Update portrait
+  const circle = document.getElementById('ghost-circle');
+  const glyph = document.getElementById('ghost-glyph');
+  const label = document.getElementById('portrait-label');
+  const died = document.getElementById('portrait-died');
+
+  circle.className = 'ghost-circle channeling';
+  glyph.textContent = s.glyph;
+
+  setTimeout(() => {
+    label.textContent = s.full_name.toUpperCase();
+    label.className = 'portrait-label visible';
+    died.textContent = `\u2014 DECEASED ${s.died.toUpperCase()} \u2014`;
+    died.className = 'portrait-died visible';
+    circle.className = 'ghost-circle';
+  }, 600);
+
+  // Clear transcript, show new empty state
+  const transcript = document.getElementById('transcript');
+  const empty = document.getElementById('transcript-empty');
+  transcript.innerHTML = '';
+  const newEmpty = document.createElement('div');
+  newEmpty.className = 'transcript-empty';
+  newEmpty.id = 'transcript-empty';
+  newEmpty.innerHTML = `
+    <div class="big-text" style="color:rgba(57,255,20,0.2)">
+      Signal located.<br><span style="font-style:normal;font-size:18px;letter-spacing:4px;">${s.full_name.toUpperCase()}</span><br>is listening.
+    </div>
+    <div class="small-text">ASK ANYTHING BELOW</div>
+  `;
+  transcript.appendChild(newEmpty);
+
+  // Reset sources
+  document.getElementById('sources-list').innerHTML = `
+    <div class="source-item" style="color:rgba(57,255,20,0.2);font-style:italic;">
+      Sources will appear after first question.
+    </div>
+  `;
+
+  setStatus(`ENTITY LOCKED: ${s.full_name.toUpperCase()} \u271D ${s.died}`, 'FIRECRAWL: READY');
+  document.getElementById('question-input').focus();
+}
+
+function setCustomSubject() {
+  const name = document.getElementById('custom-name').value.trim();
+  if (!name) return;
+  const key = name.toLowerCase();
+  SUBJECTS[key] = {
+    full_name: name,
+    died: 'Unknown',
+    glyph: name[0].toUpperCase(),
+  };
+  renderSubjects();
+  selectSubject(key);
+}
+
+// ── Asking ───────────────────────────────────────────────────────────────────
+function askQuestion(q) {
+  document.getElementById('question-input').value = q;
+  sendQuestion();
+}
+
+async function sendQuestion() {
+  if (state.busy) return;
+  const input = document.getElementById('question-input');
+  const q = input.value.trim();
+  if (!q) return;
+  if (!state.currentSubject) {
+    setStatus('SELECT AN ENTITY FIRST \u2014 USE THE LEFT PANEL', '');
+    return;
+  }
+
+  input.value = '';
+  state.busy = true;
+  setSendBusy(true);
+
+  // Remove empty state
+  const empty = document.getElementById('transcript-empty');
+  if (empty) empty.remove();
+
+  // Add human message
+  appendHumanMsg(q);
+
+  // Add typing indicator
+  const typingId = 'typing-' + Date.now();
+  appendTyping(typingId);
+
+  // Signal active
+  setSignalActive(true);
+  setStatus(`SEARCHING WEB FOR ${SUBJECTS[state.currentSubject]?.full_name || state.currentSubject}...`, 'FIRECRAWL: SEARCHING');
+  document.getElementById('ghost-circle').className = 'ghost-circle channeling';
+
+  try {
+    const result = state.demoMode
+      ? await fakeFetch(state.currentSubject, q)
+      : await realFetch(state.currentSubject, q);
+
+    removeTyping(typingId);
+    appendGhostMsg(result.ghost_text, result.audio_b64, result.sources || []);
+    renderSources(result.sources || []);
+
+    setStatus(
+      `TRANSMISSION COMPLETE \u2014 ${result.firecrawl_hit_count || 0} SOURCES RETRIEVED`,
+      `FIRECRAWL: ${result.firecrawl_hit_count || 0} HITS`
+    );
+
+  } catch (err) {
+    removeTyping(typingId);
+    appendGhostMsg(`...the signal collapsed. ${err.message || 'Connection lost.'}`, null, []);
+    setStatus('SIGNAL LOST \u2014 CHECK SERVER + API KEYS', 'FIRECRAWL: ERROR');
+  }
+
+  setSignalActive(false);
+  document.getElementById('ghost-circle').className = 'ghost-circle';
+  state.busy = false;
+  setSendBusy(false);
+}
+
+async function realFetch(subject, question) {
+  const resp = await fetch(`${state.apiUrl}/api/channel`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ subject, question }),
+  });
+  if (!resp.ok) throw new Error(`Server error: ${resp.status}`);
+  return resp.json();
+}
+
+async function fakeFetch(subject, question) {
+  await sleep(2200);
+  const demo = DEMO_RESPONSES[subject] || {
+    text: `The signal from ${SUBJECTS[subject]?.full_name || subject} is faint here. In demo mode, real Firecrawl search isn't running \u2014 but the architecture is wired and ready. Add your API keys in config to hear the actual ghost.`,
+    sources: []
+  };
+  return {
+    ghost_text: demo.text,
+    audio_b64: null,
+    sources: demo.sources,
+    firecrawl_hit_count: demo.sources.length,
+  };
+}
+
+// ── DOM helpers ──────────────────────────────────────────────────────────────
+function appendHumanMsg(text) {
+  const transcript = document.getElementById('transcript');
+  const div = document.createElement('div');
+  div.className = 'msg human';
+  div.innerHTML = `
+    <div class="msg-meta">YOU // ${new Date().toLocaleTimeString('en-US',{hour12:false})}</div>
+    <div class="msg-bubble">${escHtml(text)}</div>
+  `;
+  transcript.appendChild(div);
+  transcript.scrollTop = transcript.scrollHeight;
+}
+
+function appendTyping(id) {
+  const transcript = document.getElementById('transcript');
+  const div = document.createElement('div');
+  div.className = 'msg ghost';
+  div.id = id;
+  const subj = SUBJECTS[state.currentSubject];
+  div.innerHTML = `
+    <div class="msg-meta">${subj?.full_name?.toUpperCase() || 'ENTITY'} // CHANNELING</div>
+    <div class="msg-bubble">
+      <div class="typing-dots">
+        <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+      </div>
+    </div>
+  `;
+  transcript.appendChild(div);
+  transcript.scrollTop = transcript.scrollHeight;
+}
+
+function removeTyping(id) {
+  const el = document.getElementById(id);
+  if (el) el.remove();
+}
+
+function appendGhostMsg(text, audiob64, sources) {
+  const transcript = document.getElementById('transcript');
+  const div = document.createElement('div');
+  div.className = 'msg ghost';
+  const subj = SUBJECTS[state.currentSubject];
+
+  // Typewriter the text
+  const msgId = 'ghost-msg-' + Date.now();
+  div.innerHTML = `
+    <div class="msg-meta">${subj?.full_name?.toUpperCase() || 'ENTITY'} // ${new Date().toLocaleTimeString('en-US',{hour12:false})}</div>
+    <div class="msg-bubble" id="${msgId}"></div>
+    ${audiob64 ? `
+      <div class="audio-row">
+        <button class="play-btn" id="play-${msgId}" onclick="playAudio('${msgId}')">&#x25B6; PLAY VOICE</button>
+        <div class="waveform" id="wave-${msgId}">
+          ${[4,8,12,6,14,10,5,9].map(h => `<div class="wave-bar" style="height:${h}px"></div>`).join('')}
+        </div>
+      </div>
+    ` : ''}
+  `;
+  transcript.appendChild(div);
+  transcript.scrollTop = transcript.scrollHeight;
+
+  // Store audio
+  if (audiob64) {
+    window['_audio_' + msgId] = audiob64;
+  }
+
+  // Typewriter
+  typewrite(msgId, text, transcript);
+
+  // Speaking animation
+  document.getElementById('ghost-circle').className = 'ghost-circle speaking';
+  setTimeout(() => {
+    document.getElementById('ghost-circle').className = 'ghost-circle';
+  }, text.length * 28 + 500);
+}
+
+function typewrite(elId, text, scrollTarget) {
+  const el = document.getElementById(elId);
+  if (!el) return;
+  let i = 0;
+  const speed = 28;
+  function next() {
+    if (i < text.length) {
+      el.textContent += text[i++];
+      if (scrollTarget) scrollTarget.scrollTop = scrollTarget.scrollHeight;
+      setTimeout(next, speed + (Math.random() > 0.95 ? 80 : 0));
+    }
+  }
+  next();
+}
+
+function playAudio(msgId) {
+  const b64 = window['_audio_' + msgId];
+  if (!b64) return;
+  const binary = atob(b64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  const blob = new Blob([bytes], { type: 'audio/mpeg' });
+  const url = URL.createObjectURL(blob);
+  const audio = new Audio(url);
+
+  const btn = document.getElementById('play-' + msgId);
+  const wave = document.getElementById('wave-' + msgId);
+
+  btn.textContent = '\u23F9 PLAYING';
+  btn.className = 'play-btn playing';
+  wave.className = 'waveform playing';
+  document.getElementById('ghost-circle').className = 'ghost-circle speaking';
+
+  audio.play();
+  audio.onended = () => {
+    btn.textContent = '\u25B6 PLAY AGAIN';
+    btn.className = 'play-btn';
+    wave.className = 'waveform';
+    document.getElementById('ghost-circle').className = 'ghost-circle';
+  };
+}
+
+function renderSources(sources) {
+  const el = document.getElementById('sources-list');
+  if (!sources.length) {
+    el.innerHTML = '<div class="source-item" style="color:rgba(57,255,20,0.2)">No sources retrieved.</div>';
+    return;
+  }
+  el.innerHTML = `<div class="source-count">\u2014 ${sources.length} SOURCE${sources.length !== 1 ? 'S' : ''} \u2014</div>`;
+  sources.forEach(s => {
+    const item = document.createElement('div');
+    item.className = 'source-item';
+    item.innerHTML = `<a href="${escHtml(s.url)}" target="_blank" rel="noopener">${escHtml(s.title || s.url)}</a>`;
+    el.appendChild(item);
+  });
+}
+
+function setSignalActive(active) {
+  const bars = document.getElementById('signal-bars');
+  const label = document.getElementById('signal-label');
+  bars.className = active ? 'bars active' : 'bars';
+  label.textContent = active ? 'SIGNAL ACTIVE' : 'SIGNAL DORMANT';
+}
+
+function setSendBusy(busy) {
+  const btn = document.getElementById('send-btn');
+  btn.disabled = busy;
+  btn.textContent = busy ? 'CHANNELING...' : 'TRANSMIT';
+}
+
+function setStatus(left, right) {
+  document.getElementById('status-text').textContent = left;
+  if (right !== undefined) document.getElementById('firecrawl-status').textContent = right;
+}
+
+function escHtml(s) {
+  return String(s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+init();
+</script>
+</body>
+</html>
