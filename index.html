@@ -699,109 +699,7 @@ footer {
   justify-content: space-between;
 }
 
-/* ── API key config overlay ─────────────────────────────── */
-#config-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.92);
-  z-index: 200;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  animation: fade-in 0.3s;
-}
-
-@keyframes fade-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-.config-box {
-  width: 500px;
-  border: 1px solid var(--phosphor);
-  background: var(--surface);
-  padding: 36px;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  box-shadow: 0 0 60px rgba(57,255,20,0.15);
-}
-
-.config-title {
-  font-family: 'Cinzel', serif;
-  font-size: 20px;
-  letter-spacing: 6px;
-  color: var(--phosphor);
-  text-shadow: var(--glow);
-}
-
-.config-subtitle {
-  font-size: 10px;
-  letter-spacing: 2px;
-  color: var(--phosphor-dim);
-  line-height: 1.7;
-  margin-top: -10px;
-}
-
-.config-field {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.config-field label {
-  font-size: 8px;
-  letter-spacing: 3px;
-  color: var(--phosphor-dim);
-  text-transform: uppercase;
-}
-
-.config-field input {
-  background: var(--bg);
-  border: 1px solid var(--phosphor-dim);
-  color: var(--phosphor);
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 11px;
-  padding: 10px 12px;
-  outline: none;
-  letter-spacing: 1px;
-  width: 100%;
-}
-
-.config-field input:focus { border-color: var(--phosphor); box-shadow: var(--glow-dim); }
-.config-field input::placeholder { color: rgba(57,255,20,0.2); }
-
-.config-note {
-  font-size: 9px;
-  letter-spacing: 1.5px;
-  color: rgba(57,255,20,0.3);
-  line-height: 1.7;
-  border-left: 2px solid var(--phosphor-dim);
-  padding-left: 12px;
-}
-
-.config-btns { display: flex; gap: 10px; }
-
-.config-btn {
-  flex: 1;
-  background: transparent;
-  border: 1px solid var(--phosphor-dim);
-  color: var(--phosphor-dim);
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 9px;
-  letter-spacing: 3px;
-  padding: 12px;
-  cursor: pointer;
-  transition: all 0.15s;
-  text-transform: uppercase;
-}
-.config-btn.primary {
-  border-color: var(--phosphor);
-  color: var(--phosphor);
-  background: rgba(57,255,20,0.05);
-}
-.config-btn:hover { border-color: var(--phosphor); color: var(--phosphor); }
-.config-btn.primary:hover { box-shadow: var(--glow-dim); }
+/* Config overlay removed — keys handled server-side */
 
 /* ── Glitch text effect ─────────────────────────────────── */
 @keyframes glitch {
@@ -829,45 +727,7 @@ footer {
 <body>
 
 <!-- Config Overlay -->
-<div id="config-overlay">
-  <div class="config-box">
-    <div class="config-title">DEAD STAR</div>
-    <div class="config-subtitle">
-      Configure API connections to begin the séance.<br>
-      Keys are stored only in your browser session.
-    </div>
-
-    <div class="config-field">
-      <label>Firecrawl API Key</label>
-      <input type="password" id="fc-key" placeholder="fc-xxxxxxxxxxxxxxxx" />
-    </div>
-
-    <div class="config-field">
-      <label>ElevenLabs API Key</label>
-      <input type="password" id="el-key" placeholder="sk-xxxxxxxxxxxxxxxx" />
-    </div>
-
-    <div class="config-field">
-      <label>Anthropic API Key</label>
-      <input type="password" id="an-key" placeholder="sk-ant-xxxxxxxx" />
-    </div>
-
-    <div class="config-field">
-      <label>Backend URL (run server.py locally)</label>
-      <input type="text" id="api-url" value="http://localhost:5050" />
-    </div>
-
-    <div class="config-note">
-      All API calls go through server.py running on your machine — keys never leave localhost.
-      Run: <strong>python server.py</strong>
-    </div>
-
-    <div class="config-btns">
-      <button class="config-btn" onclick="dismissConfig()">SKIP (DEMO MODE)</button>
-      <button class="config-btn primary" onclick="saveConfig()">BEGIN SÉANCE ›</button>
-    </div>
-  </div>
-</div>
+<!-- Config overlay removed — keys are handled server-side via env vars -->
 
 <!-- Main Screen -->
 <div id="screen">
@@ -887,7 +747,6 @@ footer {
         <span id="signal-label">SIGNAL DORMANT</span>
       </div>
       <div class="sys-time" id="sys-time">--:--:--</div>
-      <button class="config-btn" style="font-size:8px;letter-spacing:2px;padding:5px 10px;border:1px solid rgba(57,255,20,0.3);background:transparent;color:rgba(57,255,20,0.4);cursor:pointer;" onclick="document.getElementById('config-overlay').style.display='flex'">&#x2699; CONFIG</button>
     </div>
   </header>
 
@@ -968,12 +827,359 @@ footer {
 </div>
 
 <script>
+// ── Audio Engine (Web Audio API — haunted séance edition) ────────────────────
+const AudioEngine = (() => {
+  let ctx = null;
+  let droneActive = false;
+  let hauntInterval = null;
+
+  function getCtx() {
+    if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
+    return ctx;
+  }
+
+  // Create convolver reverb — makes everything sound like it's in a cavern
+  function makeReverb(decay = 3, wet = 0.4) {
+    const c = getCtx();
+    const len = c.sampleRate * decay;
+    const buf = c.createBuffer(2, len, c.sampleRate);
+    for (let ch = 0; ch < 2; ch++) {
+      const d = buf.getChannelData(ch);
+      for (let i = 0; i < len; i++) {
+        d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 2.5);
+      }
+    }
+    const conv = c.createConvolver();
+    conv.buffer = buf;
+    const dry = c.createGain();
+    dry.gain.value = 1 - wet;
+    const wetGain = c.createGain();
+    wetGain.gain.value = wet;
+    const out = c.createGain();
+    return { conv, dry, wetGain, out,
+      connect(input, dest) {
+        input.connect(dry); dry.connect(out);
+        input.connect(conv); conv.connect(wetGain); wetGain.connect(out);
+        out.connect(dest || c.destination);
+      }
+    };
+  }
+
+  // Dark ambient drone — dissonant, breathing, wrong
+  function startDrone() {
+    const c = getCtx();
+    if (droneActive) return;
+    droneActive = true;
+
+    const master = c.createGain();
+    master.gain.value = 0.07;
+    const reverb = makeReverb(4, 0.6);
+
+    // Detuned low drones — tritone interval (the "devil's interval")
+    const freqs = [48, 71.5, 96, 143]; // ~C1, ~D#1 (tritone), octaves
+    freqs.forEach((freq, i) => {
+      const osc = c.createOscillator();
+      osc.type = i < 2 ? 'sine' : 'triangle';
+      osc.frequency.value = freq;
+      // Slow random detune for unease
+      const lfo = c.createOscillator();
+      lfo.type = 'sine';
+      lfo.frequency.value = 0.05 + Math.random() * 0.1;
+      const lfoGain = c.createGain();
+      lfoGain.gain.value = 1.5;
+      lfo.connect(lfoGain);
+      lfoGain.connect(osc.frequency);
+      lfo.start();
+
+      const g = c.createGain();
+      g.gain.value = i < 2 ? 0.5 : 0.25;
+      osc.connect(g);
+      g.connect(master);
+      osc.start();
+    });
+
+    // Breathing amplitude — slow swell
+    const breathLfo = c.createOscillator();
+    breathLfo.type = 'sine';
+    breathLfo.frequency.value = 0.15;
+    const breathDepth = c.createGain();
+    breathDepth.gain.value = 0.025;
+    breathLfo.connect(breathDepth);
+    breathDepth.connect(master.gain);
+    breathLfo.start();
+
+    reverb.connect(master, c.destination);
+
+    // Random ghost interference — whispers of static at random intervals
+    hauntInterval = setInterval(() => {
+      if (Math.random() > 0.6) ghostWhisper();
+    }, 4000);
+  }
+
+  // Ghost whisper — short filtered noise that sounds like a voice trying to form
+  function ghostWhisper() {
+    const c = getCtx();
+    const dur = 0.3 + Math.random() * 0.8;
+    const bufSize = c.sampleRate * dur;
+    const buf = c.createBuffer(1, bufSize, c.sampleRate);
+    const d = buf.getChannelData(0);
+
+    // Shaped noise — syllable-like amplitude envelope
+    const syllables = 2 + Math.floor(Math.random() * 3);
+    for (let i = 0; i < bufSize; i++) {
+      const t = i / bufSize;
+      const syllableEnv = Math.sin(t * syllables * Math.PI) ** 2;
+      const fadeEnv = Math.sin(t * Math.PI); // fade in/out
+      d[i] = (Math.random() * 2 - 1) * syllableEnv * fadeEnv;
+    }
+
+    const src = c.createBufferSource();
+    src.buffer = buf;
+
+    // Formant-like filtering — sounds almost like speech
+    const f1 = c.createBiquadFilter();
+    f1.type = 'bandpass';
+    f1.frequency.value = 400 + Math.random() * 800;
+    f1.Q.value = 5;
+
+    const f2 = c.createBiquadFilter();
+    f2.type = 'bandpass';
+    f2.frequency.value = 1800 + Math.random() * 1200;
+    f2.Q.value = 3;
+
+    const mix = c.createGain();
+    mix.gain.value = 0.04;
+
+    const reverb = makeReverb(2.5, 0.7);
+
+    src.connect(f1); f1.connect(mix);
+    src.connect(f2); f2.connect(mix);
+    reverb.connect(mix, c.destination);
+    src.start();
+  }
+
+  // Typewriter tick — bone-dry, with occasional metallic ring
+  function tick() {
+    const c = getCtx();
+    const buf = c.createBuffer(1, c.sampleRate * 0.02, c.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < d.length; i++) {
+      d[i] = (Math.random() * 2 - 1) * Math.exp(-i / (d.length * 0.08));
+    }
+    const src = c.createBufferSource();
+    src.buffer = buf;
+
+    const hp = c.createBiquadFilter();
+    hp.type = 'highpass';
+    hp.frequency.value = 2000 + Math.random() * 3000;
+
+    const gain = c.createGain();
+    gain.gain.value = 0.04 + Math.random() * 0.03;
+
+    src.connect(hp);
+    hp.connect(gain);
+    gain.connect(c.destination);
+    src.start();
+
+    // Rare metallic ring — like a haunted typewriter bell
+    if (Math.random() > 0.92) {
+      const ring = c.createOscillator();
+      ring.type = 'sine';
+      ring.frequency.value = 2200 + Math.random() * 1000;
+      const rg = c.createGain();
+      rg.gain.setValueAtTime(0.03, c.currentTime);
+      rg.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.4);
+      ring.connect(rg);
+      rg.connect(c.destination);
+      ring.start();
+      ring.stop(c.currentTime + 0.4);
+    }
+  }
+
+  // Static burst — EVP recorder static, sweeping and alive
+  function staticBurst(duration = 2) {
+    const c = getCtx();
+    const bufSize = c.sampleRate * duration;
+    const buf = c.createBuffer(2, bufSize, c.sampleRate);
+
+    for (let ch = 0; ch < 2; ch++) {
+      const d = buf.getChannelData(ch);
+      for (let i = 0; i < bufSize; i++) {
+        const t = i / bufSize;
+        // Swelling envelope with erratic bursts
+        const env = Math.sin(t * Math.PI) * (1 + 0.5 * Math.sin(t * 37));
+        const crackle = Math.random() > 0.98 ? 3 : 1;
+        d[i] = (Math.random() * 2 - 1) * env * crackle;
+      }
+    }
+
+    const src = c.createBufferSource();
+    src.buffer = buf;
+
+    // Sweeping bandpass — like scanning radio frequencies
+    const bp = c.createBiquadFilter();
+    bp.type = 'bandpass';
+    bp.frequency.setValueAtTime(400, c.currentTime);
+    bp.frequency.exponentialRampToValueAtTime(3000, c.currentTime + duration * 0.4);
+    bp.frequency.exponentialRampToValueAtTime(600, c.currentTime + duration);
+    bp.Q.value = 2;
+
+    const gain = c.createGain();
+    gain.gain.setValueAtTime(0.18, c.currentTime);
+    gain.gain.setValueAtTime(0.18, c.currentTime + duration * 0.7);
+    gain.gain.exponentialRampToValueAtTime(0.001, c.currentTime + duration);
+
+    const reverb = makeReverb(2, 0.5);
+
+    src.connect(bp);
+    bp.connect(gain);
+    reverb.connect(gain, c.destination);
+    src.start();
+  }
+
+  // Entity select — dissonant bell, like a spirit board activating
+  function selectPing() {
+    const c = getCtx();
+    // Cluster of detuned tones — not a clean ping, a summoning
+    const freqs = [440, 554, 622, 831]; // A4, C#5, Eb5, Ab5 — diminished cluster
+    freqs.forEach((freq, i) => {
+      const osc = c.createOscillator();
+      osc.type = 'sine';
+      osc.frequency.value = freq + (Math.random() - 0.5) * 8; // slight detune
+      const gain = c.createGain();
+      const delay = i * 0.06;
+      gain.gain.setValueAtTime(0, c.currentTime + delay);
+      gain.gain.linearRampToValueAtTime(0.06, c.currentTime + delay + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.001, c.currentTime + delay + 1.2);
+      osc.connect(gain);
+      gain.connect(c.destination);
+      osc.start(c.currentTime + delay);
+      osc.stop(c.currentTime + delay + 1.2);
+    });
+  }
+
+  // Transmission send — descending siren into sub-bass, like calling downward
+  function sendTone() {
+    const c = getCtx();
+    const reverb = makeReverb(3, 0.6);
+
+    const osc = c.createOscillator();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(800, c.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(40, c.currentTime + 1.5);
+
+    const lp = c.createBiquadFilter();
+    lp.type = 'lowpass';
+    lp.frequency.setValueAtTime(2000, c.currentTime);
+    lp.frequency.exponentialRampToValueAtTime(80, c.currentTime + 1.5);
+
+    const gain = c.createGain();
+    gain.gain.setValueAtTime(0.1, c.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 1.8);
+
+    osc.connect(lp);
+    lp.connect(gain);
+    reverb.connect(gain, c.destination);
+    osc.start();
+    osc.stop(c.currentTime + 1.8);
+
+    // Subsonic thud at the bottom
+    setTimeout(() => {
+      const thud = c.createOscillator();
+      thud.type = 'sine';
+      thud.frequency.value = 30;
+      const tg = c.createGain();
+      tg.gain.setValueAtTime(0.15, c.currentTime);
+      tg.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.5);
+      thud.connect(tg);
+      tg.connect(c.destination);
+      thud.start();
+      thud.stop(c.currentTime + 0.5);
+    }, 1200);
+  }
+
+  // Ghost arrival — the dead are here. Reverse cymbal feel + dissonant chord + breath
+  function ghostArrive() {
+    const c = getCtx();
+
+    // Reverse swell — noise that builds instead of decays
+    const swellDur = 1.5;
+    const swellBuf = c.createBuffer(2, c.sampleRate * swellDur, c.sampleRate);
+    for (let ch = 0; ch < 2; ch++) {
+      const d = swellBuf.getChannelData(ch);
+      for (let i = 0; i < d.length; i++) {
+        const t = i / d.length;
+        d[i] = (Math.random() * 2 - 1) * (t ** 3); // cubic build
+      }
+    }
+    const swellSrc = c.createBufferSource();
+    swellSrc.buffer = swellBuf;
+    const swellBp = c.createBiquadFilter();
+    swellBp.type = 'bandpass';
+    swellBp.frequency.value = 800;
+    swellBp.Q.value = 1;
+    const swellGain = c.createGain();
+    swellGain.gain.value = 0.2;
+    swellSrc.connect(swellBp);
+    swellBp.connect(swellGain);
+    swellGain.connect(c.destination);
+    swellSrc.start();
+
+    // Dissonant chord hit at the peak
+    setTimeout(() => {
+      const chord = [110, 130.81, 164.81, 233.08]; // A2, C3, E3, Bb3 — dom7 but wrong
+      const reverb = makeReverb(4, 0.7);
+      const chordMix = c.createGain();
+      chordMix.gain.setValueAtTime(0.08, c.currentTime);
+      chordMix.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 3);
+
+      chord.forEach(freq => {
+        const osc = c.createOscillator();
+        osc.type = 'triangle';
+        osc.frequency.value = freq + (Math.random() - 0.5) * 3;
+        osc.connect(chordMix);
+        osc.start();
+        osc.stop(c.currentTime + 3);
+      });
+
+      reverb.connect(chordMix, c.destination);
+    }, 1300);
+
+    // Breath sound — shaped noise exhale
+    setTimeout(() => {
+      const breathDur = 1.2;
+      const breathBuf = c.createBuffer(1, c.sampleRate * breathDur, c.sampleRate);
+      const d = breathBuf.getChannelData(0);
+      for (let i = 0; i < d.length; i++) {
+        const t = i / d.length;
+        const env = Math.sin(t * Math.PI) ** 0.5;
+        d[i] = (Math.random() * 2 - 1) * env * 0.5;
+      }
+      const src = c.createBufferSource();
+      src.buffer = breathBuf;
+      const bp = c.createBiquadFilter();
+      bp.type = 'bandpass';
+      bp.frequency.value = 600;
+      bp.Q.value = 2;
+      const g = c.createGain();
+      g.gain.value = 0.08;
+      const reverb = makeReverb(3, 0.8);
+      src.connect(bp);
+      bp.connect(g);
+      reverb.connect(g, c.destination);
+      src.start();
+    }, 1500);
+  }
+
+  return { startDrone, tick, staticBurst, selectPing, sendTone, ghostArrive, ghostWhisper };
+})();
+
+// Start drone on first user interaction (browser autoplay policy)
+document.addEventListener('click', () => AudioEngine.startDrone(), { once: true });
+
 // ── State ───────────────────────────────────────────────────────────────────
 const state = {
   apiUrl: 'http://localhost:5050',
-  fcKey: '',
-  elKey: '',
-  anKey: '',
   currentSubject: null,
   demoMode: false,
   busy: false,
@@ -1055,6 +1261,7 @@ const DEMO_RESPONSES = {
 function init() {
   renderSubjects();
   startClock();
+  detectMode();
 }
 
 function renderSubjects() {
@@ -1077,19 +1284,18 @@ function startClock() {
 }
 
 // ── Config ──────────────────────────────────────────────────────────────────
-function saveConfig() {
-  state.fcKey = document.getElementById('fc-key').value.trim();
-  state.elKey = document.getElementById('el-key').value.trim();
-  state.anKey = document.getElementById('an-key').value.trim();
-  state.apiUrl = document.getElementById('api-url').value.trim() || 'http://localhost:5050';
-  state.demoMode = false;
-  document.getElementById('config-overlay').style.display = 'none';
-}
-
-function dismissConfig() {
-  state.demoMode = true;
-  document.getElementById('config-overlay').style.display = 'none';
-  setStatus('DEMO MODE \u2014 RESPONSES ARE SIMULATED', 'FIRECRAWL: SIMULATED');
+function detectMode() {
+  // Auto-detect: if server is running, use live mode; otherwise demo
+  fetch(`${state.apiUrl}/api/health`, { method: 'GET' })
+    .then(r => r.ok ? r.json() : Promise.reject())
+    .then(() => {
+      state.demoMode = false;
+      setStatus('LIVE MODE \u2014 SERVER CONNECTED', 'FIRECRAWL: READY');
+    })
+    .catch(() => {
+      state.demoMode = true;
+      setStatus('SYSTEM READY \u2014 AWAITING CONTACT', 'FIRECRAWL: STANDBY');
+    });
 }
 
 // ── Subject selection ────────────────────────────────────────────────────────
@@ -1110,6 +1316,8 @@ function selectSubject(key) {
 
   circle.className = 'ghost-circle channeling';
   glyph.textContent = s.glyph;
+  AudioEngine.selectPing();
+  AudioEngine.staticBurst(0.8);
 
   setTimeout(() => {
     label.textContent = s.full_name.toUpperCase();
@@ -1191,6 +1399,8 @@ async function sendQuestion() {
 
   // Signal active
   setSignalActive(true);
+  AudioEngine.sendTone();
+  AudioEngine.staticBurst(2);
   setStatus(`SEARCHING WEB FOR ${SUBJECTS[state.currentSubject]?.full_name || state.currentSubject}...`, 'FIRECRAWL: SEARCHING');
   document.getElementById('ghost-circle').className = 'ghost-circle channeling';
 
@@ -1200,6 +1410,7 @@ async function sendQuestion() {
       : await realFetch(state.currentSubject, q);
 
     removeTyping(typingId);
+    AudioEngine.ghostArrive();
     appendGhostMsg(result.ghost_text, result.audio_b64, result.sources || []);
     renderSources(result.sources || []);
 
@@ -1326,6 +1537,7 @@ function typewrite(elId, text, scrollTarget) {
   function next() {
     if (i < text.length) {
       el.textContent += text[i++];
+      if (text[i-1] !== ' ') AudioEngine.tick();
       if (scrollTarget) scrollTarget.scrollTop = scrollTarget.scrollHeight;
       setTimeout(next, speed + (Math.random() > 0.95 ? 80 : 0));
     }
@@ -1334,6 +1546,22 @@ function typewrite(elId, text, scrollTarget) {
 }
 
 function playAudio(msgId) {
+  const btn = document.getElementById('play-' + msgId);
+  const wave = document.getElementById('wave-' + msgId);
+
+  // If already playing, stop it
+  const existing = window['_playing_' + msgId];
+  if (existing) {
+    existing.pause();
+    existing.currentTime = 0;
+    window['_playing_' + msgId] = null;
+    btn.textContent = '\u25B6 PLAY VOICE';
+    btn.className = 'play-btn';
+    wave.className = 'waveform';
+    document.getElementById('ghost-circle').className = 'ghost-circle';
+    return;
+  }
+
   const b64 = window['_audio_' + msgId];
   if (!b64) return;
   const binary = atob(b64);
@@ -1342,17 +1570,16 @@ function playAudio(msgId) {
   const blob = new Blob([bytes], { type: 'audio/mpeg' });
   const url = URL.createObjectURL(blob);
   const audio = new Audio(url);
+  window['_playing_' + msgId] = audio;
 
-  const btn = document.getElementById('play-' + msgId);
-  const wave = document.getElementById('wave-' + msgId);
-
-  btn.textContent = '\u23F9 PLAYING';
+  btn.textContent = '\u23F9 STOP';
   btn.className = 'play-btn playing';
   wave.className = 'waveform playing';
   document.getElementById('ghost-circle').className = 'ghost-circle speaking';
 
   audio.play();
   audio.onended = () => {
+    window['_playing_' + msgId] = null;
     btn.textContent = '\u25B6 PLAY AGAIN';
     btn.className = 'play-btn';
     wave.className = 'waveform';

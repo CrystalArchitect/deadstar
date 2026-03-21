@@ -267,8 +267,11 @@ Respond as {subject['full_name']}, speaking from death."""
         if tts_resp.ok:
             import base64
             audio_b64 = base64.b64encode(tts_resp.content).decode("utf-8")
+            app.logger.info(f"[ELEVENLABS] Generated {len(tts_resp.content)} bytes of audio")
+        else:
+            app.logger.error(f"[ELEVENLABS] HTTP {tts_resp.status_code}: {tts_resp.text[:300]}")
     except Exception as e:
-        app.logger.error(f"ElevenLabs error: {e}")
+        app.logger.error(f"[ELEVENLABS] Exception: {e}")
 
     return jsonify({
         "subject": subject["full_name"],
@@ -285,6 +288,18 @@ def health():
     return jsonify({"status": "alive", "irony": "maximum"})
 
 
+@app.route("/", methods=["GET"])
+def serve_frontend():
+    return app.send_static_file("index.html")
+
+
 if __name__ == "__main__":
+    import shutil
+    # Copy index.html into static/ so Flask can serve it
+    os.makedirs(os.path.join(os.path.dirname(__file__), "static"), exist_ok=True)
+    shutil.copy2(
+        os.path.join(os.path.dirname(__file__), "index.html"),
+        os.path.join(os.path.dirname(__file__), "static", "index.html"),
+    )
     print("\n\U0001F480 DEAD STAR server starting on http://localhost:5050\n")
     app.run(port=5050, debug=True)
